@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>구글 폼 연동 테스트 신청서</title>
+  <title>스프레드시트 직접 연동 신청서</title>
   <style>
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background:#f8fafc; color:#0f172a; margin:0; padding:24px; }
     .container { max-width: 720px; margin: 0 auto; }
@@ -14,194 +14,88 @@
     input[type="text"], input[type="tel"] { width:100%; padding:10px 12px; border:1px solid #e2e8f0; border-radius:12px; font-size:14px; }
     .row { display:grid; grid-template-columns: 1fr; gap:16px; }
     @media (min-width: 768px) { .row { grid-template-columns: 1fr 1fr; } }
-    .actions { display:flex; justify-content: space-between; align-items:center; margin-top: 16px; }
+    .actions { display:flex; justify-content: flex-end; align-items:center; margin-top: 16px; gap: 8px; }
     button { padding:10px 14px; border-radius:12px; border:1px solid #e2e8f0; background:#fff; cursor:pointer; }
     button.primary { background:#16a34a; color:#fff; border:none; }
     button:disabled { opacity:0.6; cursor:not-allowed; }
-    .badge { display:inline-block; padding:2px 8px; border-radius:999px; background:#e2e8f0; font-size:12px; margin-right:8px; }
     .error { color:#dc2626; font-size: 13px; margin-top: 8px; }
     .success { color:#166534; font-size: 13px; margin-top: 8px; }
-    .progress { display:flex; gap:8px; margin:16px 0; }
-    .bar { height:8px; flex:1; background:#e2e8f0; border-radius:999px; }
-    .bar.active { background:#3b82f6; }
-    .hidden { display:none; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="card">
-      <h1>구글 폼 연동 테스트 신청서</h1>
-      <p class="muted">실제 웹사이트(예: GitHub Pages, Netlify, Vercel)에서 직접 제출되도록 구성된 데모입니다. 별도의 '구글 폼에서 열기' 버튼이 없습니다.</p>
+      <h1>스프레드시트 직접 연동 신청서</h1>
+      <p class="muted">이 폼은 Google Apps Script Web App으로 전송되어 스프레드시트에 바로 기록됩니다.</p>
 
-      <div class="progress"><div class="bar active" id="bar1"></div><div class="bar" id="bar2"></div></div>
+      <label>매장명</label>
+      <input type="text" id="storeName" placeholder="예) 패스커피 서울역점" />
 
-      <!-- Step 1 -->
-      <section id="step1">
-        <span class="badge">1단계</span> 안내사항 확인
-        <ul class="muted">
-          <li>이 페이지에서 [제출]을 누르면 Google Forms로 직접 전송합니다.</li>
-          <li>제출 후 폼의 응답 시트에서 데이터가 쌓이는지 확인하세요.</li>
-        </ul>
-        <label><input type="checkbox" id="agree"> 안내사항을 확인했습니다.</label>
-        <div class="actions">
-          <span></span>
-          <button id="nextBtn" disabled>다음 (매장 정보 입력)</button>
+      <div class="row">
+        <div>
+          <label>사장님 성함</label>
+          <input type="text" id="ownerName" placeholder="예) 김패스" />
         </div>
-      </section>
-
-      <!-- Step 2 -->
-      <section id="step2" class="hidden">
-        <span class="badge">2단계</span> 매장 정보
-        <label>매장명</label>
-        <input type="text" id="storeName" placeholder="예) 패스커피 서울역점">
-
-        <div class="row">
-          <div>
-            <label>사장님 성함</label>
-            <input type="text" id="ownerName" placeholder="예) 김패스">
-          </div>
-          <div>
-            <label>사장님 연락처</label>
-            <input type="tel" id="ownerPhone" placeholder="예) 010-1234-5678">
-          </div>
+        <div>
+          <label>사장님 연락처</label>
+          <input type="tel" id="ownerPhone" placeholder="예) 010-1234-5678" />
         </div>
+      </div>
 
-        <div id="message" class="error hidden"></div>
-        <div id="success" class="success hidden"></div>
+      <div id="message" class="error" style="display:none;"></div>
+      <div id="success" class="success" style="display:none;"></div>
 
-        <div class="actions">
-          <button id="prevBtn">이전</button>
-          <button id="submitBtn" class="primary">제출</button>
-        </div>
-      </section>
+      <div class="actions">
+        <button id="submitBtn" class="primary">제출</button>
+      </div>
     </div>
   </div>
 
-  <iframe id="hidden_iframe" name="hidden_iframe" class="hidden"></iframe>
-
   <script>
-    // === 사용자 제공 값 ===
-    const FORM_ID = "1FAIpQLSfbaVaebSlCdOn7eNwGDfryph3brI1cmqPLrjkFc4pWoe4xEg";
-    const ENTRY = {
-      checkboxNotice: "entry.1849677858", // 안내사항 체크박스
-      storeName: "entry.2004604856",      // 매장명
-      ownerName: "entry.1604015",         // 사장님 성함
-      ownerPhone: "entry.1133356289"      // 사장님 연락처
-    };
-    const CHECKBOX_VALUE = "옵션 1";
-    const FBZX_TOKEN = "5815251098877105380";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxsLzUUFcfH3FrpGHPjy7CH1om8h6QC8Fk7_8bnR2jGnurfBaw2oj0y0qidwEJgMIKFcQ/exec";
 
-    const actionUrl = `https://docs.google.com/forms/d/e/${FORM_ID}/formResponse`;
+    const $ = (sel) => document.querySelector(sel);
+    const show = (el) => el.style.display = "";
+    const hide = (el) => el.style.display = "none";
 
-    // Step controls
-    const agree = document.getElementById("agree");
-    const nextBtn = document.getElementById("nextBtn");
-    const prevBtn = document.getElementById("prevBtn");
-    const submitBtn = document.getElementById("submitBtn");
+    const message = $("#message");
+    const success = $("#success");
+    const submitBtn = $("#submitBtn");
 
-    const step1 = document.getElementById("step1");
-    const step2 = document.getElementById("step2");
-    const bar2 = document.getElementById("bar2");
-
-    const storeName = document.getElementById("storeName");
-    const ownerName = document.getElementById("ownerName");
-    const ownerPhone = document.getElementById("ownerPhone");
-
-    const message = document.getElementById("message");
-    const success = document.getElementById("success");
-
-    agree.addEventListener("change", () => {
-      nextBtn.disabled = !agree.checked;
-    });
-
-    nextBtn.addEventListener("click", () => {
-      step1.classList.add("hidden");
-      step2.classList.remove("hidden");
-      bar2.classList.add("active");
-    });
-
-    prevBtn?.addEventListener("click", () => {
-      step2.classList.add("hidden");
-      step1.classList.remove("hidden");
-      bar2.classList.remove("active");
-    });
-
-    function showError(text) {
-      message.textContent = text;
-      message.classList.remove("hidden");
-      success.classList.add("hidden");
-    }
-    function showSuccess(text) {
-      success.textContent = text;
-      success.classList.remove("hidden");
-      message.classList.add("hidden");
-    }
-
-    // Submit via fetch, then fallback to hidden iframe if needed
     submitBtn.addEventListener("click", async () => {
-      const s = storeName.value.trim();
-      const o = ownerName.value.trim();
-      const p = ownerPhone.value.trim();
-      if (!s) return showError("매장명을 입력하세요.");
-      if (!o) return showError("사장님 성함을 입력하세요.");
-      if (!p) return showError("사장님 연락처를 입력하세요.");
+      const s = $("#storeName").value.trim();
+      const o = $("#ownerName").value.trim();
+      const p = $("#ownerPhone").value.trim();
 
-      showError(""); message.classList.add("hidden"); success.classList.add("hidden");
+      if (!s) { message.textContent = "매장명을 입력하세요."; show(message); hide(success); return; }
+      if (!o) { message.textContent = "사장님 성함을 입력하세요."; show(message); hide(success); return; }
+      if (!p) { message.textContent = "사장님 연락처를 입력하세요."; show(message); hide(success); return; }
+
+      hide(message); hide(success);
       submitBtn.disabled = true;
 
-      const nowTs = Date.now().toString();
-      const params = new URLSearchParams();
-      params.append(ENTRY.storeName, s);
-      params.append(ENTRY.ownerName, o);
-      params.append(ENTRY.ownerPhone, p);
-      params.append(ENTRY.checkboxNotice, CHECKBOX_VALUE);
-      params.append(`${ENTRY.checkboxNotice}_sentinel`, "");
+      const body = new URLSearchParams({
+        storeName: s,
+        ownerName: o,
+        ownerPhone: p,
+        notice: "옵션 1"
+      });
 
-      params.append("fvv", "1");
-      params.append("dlut", nowTs);
-      params.append("hud", "true");
-      params.append("partialResponse", `[null,null,"${FBZX_TOKEN}"]`);
-      params.append("pageHistory", "0");
-      params.append("fbzx", FBZX_TOKEN);
-      params.append("submissionTimestamp", nowTs);
-      params.append("continue", "1");
-      params.append("submit", "Submit");
-
-      // 1) Try fetch first (works on real hosting; may be blocked in some sandboxes)
-      try {
-        await fetch(actionUrl, {
+      try { 
+        await fetch(GAS_URL, {
           method: "POST",
           mode: "no-cors",
           headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-          body: params.toString(),
+          body: body.toString()
         });
-        showSuccess("제출했습니다. 응답 시트에서 확인하세요.");
-        submitBtn.disabled = false;
-        return;
+        $("#storeName").value = "";
+        $("#ownerName").value = "";
+        $("#ownerPhone").value = "";
+        success.textContent = "제출 완료! 스프레드시트에서 확인해 주세요.";
+        show(success);
       } catch (e) {
-        console.warn("fetch submit failed, fallback to iframe", e);
-      }
-
-      // 2) Fallback: hidden iframe
-      try {
-        const form = document.createElement("form");
-        form.method = "POST";
-        form.action = actionUrl;
-        form.target = "hidden_iframe";
-
-        const add = (k, v) => {
-          const i = document.createElement("input");
-          i.type = "hidden"; i.name = k; i.value = v;
-          form.appendChild(i);
-        };
-        for (const [k, v] of params.entries()) add(k, v);
-
-        document.body.appendChild(form);
-        form.submit();
-        showSuccess("제출했습니다(iframe). 응답 시트에서 확인하세요.");
-      } catch (e) {
-        console.warn("iframe submit failed", e);
-        showError("제출이 차단되었습니다. 호스팅 환경의 보안정책을 확인해 주세요.");
+        message.textContent = "전송 실패: " + (e && e.message ? e.message : "알 수 없는 오류");
+        show(message);
       } finally {
         submitBtn.disabled = false;
       }
