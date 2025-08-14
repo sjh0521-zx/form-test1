@@ -42,6 +42,10 @@
         </div>
       </div>
 
+      <label style="margin-top:16px;">
+        <input type="checkbox" id="noticeCheckbox" value="옵션 1" /> 안내사항 확인
+      </label>
+
       <div id="message" class="error" style="display:none;"></div>
       <div id="success" class="success" style="display:none;"></div>
 
@@ -66,6 +70,7 @@
       const s = $("#storeName").value.trim();
       const o = $("#ownerName").value.trim();
       const p = $("#ownerPhone").value.trim();
+      const n = $("#noticeCheckbox").checked ? "옵션 1" : "";
 
       if (!s) { message.textContent = "매장명을 입력하세요."; show(message); hide(success); return; }
       if (!o) { message.textContent = "사장님 성함을 입력하세요."; show(message); hide(success); return; }
@@ -78,7 +83,7 @@
         storeName: s,
         ownerName: o,
         ownerPhone: p,
-        notice: "옵션 1"
+        notice: n
       });
 
       try { 
@@ -91,6 +96,7 @@
         $("#storeName").value = "";
         $("#ownerName").value = "";
         $("#ownerPhone").value = "";
+        $("#noticeCheckbox").checked = false;
         success.textContent = "제출 완료! 스프레드시트에서 확인해 주세요.";
         show(success);
       } catch (e) {
