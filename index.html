@@ -31,7 +31,7 @@
   <div class="container">
     <div class="card">
       <h1>구글 폼 연동 테스트 신청서</h1>
-      <p class="muted">이 페이지는 정적 호스팅(GitHub Pages 등)에서 곧바로 동작하도록 만든 데모입니다.</p>
+      <p class="muted">실제 웹사이트(예: GitHub Pages, Netlify, Vercel)에서 직접 제출되도록 구성된 데모입니다. 별도의 '구글 폼에서 열기' 버튼이 없습니다.</p>
 
       <div class="progress"><div class="bar active" id="bar1"></div><div class="bar" id="bar2"></div></div>
 
@@ -39,7 +39,7 @@
       <section id="step1">
         <span class="badge">1단계</span> 안내사항 확인
         <ul class="muted">
-          <li>제출 시 Google Forms로 직접 전송됩니다.</li>
+          <li>이 페이지에서 [제출]을 누르면 Google Forms로 직접 전송합니다.</li>
           <li>제출 후 폼의 응답 시트에서 데이터가 쌓이는지 확인하세요.</li>
         </ul>
         <label><input type="checkbox" id="agree"> 안내사항을 확인했습니다.</label>
@@ -71,10 +71,7 @@
 
         <div class="actions">
           <button id="prevBtn">이전</button>
-          <div style="display:flex; gap:8px;">
-            <button id="prefillBtn">구글 폼에서 열기(자동 채움)</button>
-            <button id="submitBtn" class="primary">제출</button>
-          </div>
+          <button id="submitBtn" class="primary">제출</button>
         </div>
       </section>
     </div>
@@ -95,18 +92,15 @@
     const FBZX_TOKEN = "5815251098877105380";
 
     const actionUrl = `https://docs.google.com/forms/d/e/${FORM_ID}/formResponse`;
-    const viewUrl   = `https://docs.google.com/forms/d/e/${FORM_ID}/viewform`;
 
     // Step controls
     const agree = document.getElementById("agree");
     const nextBtn = document.getElementById("nextBtn");
     const prevBtn = document.getElementById("prevBtn");
     const submitBtn = document.getElementById("submitBtn");
-    const prefillBtn = document.getElementById("prefillBtn");
 
     const step1 = document.getElementById("step1");
     const step2 = document.getElementById("step2");
-    const bar1 = document.getElementById("bar1");
     const bar2 = document.getElementById("bar2");
 
     const storeName = document.getElementById("storeName");
@@ -143,26 +137,6 @@
       message.classList.add("hidden");
     }
 
-    // Prefill open (확실한 제출 경로)
-    prefillBtn.addEventListener("click", () => {
-      const nowTs = Date.now().toString();
-      const qs = new URLSearchParams([
-        [ENTRY.storeName, storeName.value],
-        [ENTRY.ownerName, ownerName.value],
-        [ENTRY.ownerPhone, ownerPhone.value],
-        [ENTRY.checkboxNotice, CHECKBOX_VALUE],
-        [`${ENTRY.checkboxNotice}_sentinel`, ""],
-        ["fvv", "1"],
-        ["dlut", nowTs],
-        ["hud", "true"],
-        ["partialResponse", `[null,null,"${FBZX_TOKEN}"]`],
-        ["pageHistory", "0"],
-        ["fbzx", FBZX_TOKEN],
-        ["submissionTimestamp", nowTs],
-      ]).toString();
-      window.open(`${viewUrl}?usp=pp_url&${qs}`, "_blank");
-    });
-
     // Submit via fetch, then fallback to hidden iframe if needed
     submitBtn.addEventListener("click", async () => {
       const s = storeName.value.trim();
@@ -193,7 +167,7 @@
       params.append("continue", "1");
       params.append("submit", "Submit");
 
-      // 1) Try fetch first
+      // 1) Try fetch first (works on real hosting; may be blocked in some sandboxes)
       try {
         await fetch(actionUrl, {
           method: "POST",
@@ -227,7 +201,7 @@
         showSuccess("제출했습니다(iframe). 응답 시트에서 확인하세요.");
       } catch (e) {
         console.warn("iframe submit failed", e);
-        showError("제출이 차단되었습니다. '구글 폼에서 열기(자동 채움)' 버튼을 사용해 주세요.");
+        showError("제출이 차단되었습니다. 호스팅 환경의 보안정책을 확인해 주세요.");
       } finally {
         submitBtn.disabled = false;
       }
